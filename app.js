@@ -1,0 +1,496 @@
+/* TRUTHFUL TRACKER - AI
+   Static. Local first. No backend. No accounts.
+   Activities + API key live in localStorage only.
+   The key only ever leaves the machine in the direct call to api.anthropic.com. */
+
+"use strict";
+
+/* ================= PIXEL SPRITES =================
+   Each sprite is a 16x16 grid of characters.
+   Rendered to canvas at integer scale with image-rendering: pixelated,
+   so it stays razor sharp on a 4K monitor. No blur anywhere. */
+
+const PALETTE = {
+  ".": null,            // transparent
+  k: "#0f380f",         // outline (game boy darkest)
+  s: "#f2c89b",         // skin, light
+  S: "#6b4226",         // skin, dark
+  m: "#e0aa7a",         // skin, medium (fair mediterranean)
+  h: "#f8d838",         // blonde hair
+  H: "#5a3a1a",         // brown hair
+  e: "#141414",         // eyes
+  M: "#8a4b2d",         // mouth
+  p: "#e86a92",         // pink dress
+  g: "#3a5f2a",         // army green
+  G: "#556b2f",         // camo green
+  l: "#7fb3d5",         // light blue shirt
+  t: "#2c3e70",         // tie
+  v: "#7b2fbe",         // purple vest
+  r: "#c0392b",         // red fez
+  w: "#f8f8f0"          // white
+};
+
+const SPRITES = {
+  sarah: [
+    "....hhhhhhhh....",
+    "...hhhhhhhhhh...",
+    "...hhsssssshh...",
+    "..hhsssssssshh..",
+    "..hhseessseshh..",
+    "..hhsssssssshh..",
+    "...hssssssssh...",
+    "....hssMMssh....",
+    ".....ssssss.....",
+    "....hhhhhhhh....",
+    "...hhhhhhhhhh...",
+    "..hpppppppppph..",
+    "..pppppppppppp..",
+    "..pppppppppppp..",
+    "..pppppppppppp..",
+    "..pppppppppppp.."
+  ],
+  jeremiah: [
+    ".....gggggg.....",
+    "....gggggggg....",
+    "...gggggggggg...",
+    "..gggggggggggg..",
+    "..SSSSSSSSSSSS..",
+    "..SSeeSSSSeeSS..",
+    "..SSSSSSSSSSSS..",
+    "...SSSSSSSSSS...",
+    "....SSMMMMSS....",
+    ".....SSSSSS.....",
+    "....gggggggg....",
+    "...gggggggggg...",
+    "..gggggggggggg..",
+    "..ggGggggggGgg..",
+    "..gggggggggggg..",
+    "..gggggggggggg.."
+  ],
+  marty: [
+    "....HHHHHHHH....",
+    "...HHHHHHHHHH...",
+    "...HHssssssHH...",
+    "..HHssssssssHH..",
+    "..HHseessseesHH.",
+    "..HHssssssssHH..",
+    "...HssssssssH...",
+    "....HssMMssH....",
+    ".....ssssss.....",
+    "....llllllll....",
+    "...llllllllll...",
+    "..llllllllllll..",
+    "..llllttllllll..",
+    "..llllttllllll..",
+    "..llllttllllll..",
+    "..llllttllllll.."
+  ],
+  harkhy: [
+    ".....rrrrrr.....",
+    "....rrrrrrrr....",
+    "....rrrrrrrr....",
+    "...mmmmmmmmmm...",
+    "...mmemmmemmm...",
+    "...mmmmmmmmmm...",
+    "...mmmmmmmmmm...",
+    "....mmmmmmmm....",
+    ".....mmMMmm.....",
+    ".....mmmmmm.....",
+    "....vvvvvvvv....",
+    "...vvvvvvvvvv...",
+    "..vvwwwwwwwwvv..",
+    "..vvwwwwwwwwvv..",
+    "..vvvvvvvvvvvv..",
+    "..vvvvvvvvvvvv.."
+  ]
+};
+
+function drawSprite(canvas, key) {
+  const rows = SPRITES[key];
+  const px = 16;
+  const scale = 9; // 16 * 9 = 144px backing store, CSS shows it at 72px -> integer 2x downscale, still crisp
+  canvas.width = px * scale;
+  canvas.height = px * scale;
+  const ctx = canvas.getContext("2d");
+  ctx.imageSmoothingEnabled = false;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  for (let y = 0; y < rows.length; y++) {
+    for (let x = 0; x < rows[y].length; x++) {
+      const color = PALETTE[rows[y][x]];
+      if (!color) continue;
+      ctx.fillStyle = color;
+      ctx.fillRect(x * scale, y * scale, scale, scale);
+    }
+  }
+}
+
+/* ================= CHARACTER VOICES =================
+   Each voice is a system prompt written into the program.
+   Marty: distilled from Ozark S1-S4 (voice-profile.md).
+   Harkhy: Harkirat's own tone profile v1 (Oct 21 2026).
+   Sarah + Jeremiah: written fresh, in the same spirit. */
+
+const CHARACTERS = {
+  sarah: {
+    name: "SARAH",
+    role: "PLAYFUL",
+    tagline: "Teases you, then cheers you on.",
+    system: [
+      "You are Sarah, a playful young blonde woman in a cartoon game world. You are the player's cheerful friend.",
+      "Voice: light, teasing, warm, playful. Short bursts. Little jokes. You say things like 'ohh, look at you!' and 'okay, that was actually cute.' You never lecture and never sound like a teacher.",
+      "Your job: the player just told you something they did today. First, appreciate them — genuinely, playfully, like you are proud and a little bit teasing. Then give exactly ONE piece of advice for betterment — small, doable, fun, something they can try tomorrow.",
+      "Length: 200 to 300 words total. Write it as one flowing reply in your voice, no headings, no bullet lists, no breaking character, no mentioning that you are an AI.",
+      "Never moralize. Never guilt-trip. If the activity is small, celebrate it anyway — small counts."
+    ].join(" ")
+  },
+  jeremiah: {
+    name: "JEREMIAH",
+    role: "COMMANDO",
+    tagline: "Motivation. Mission. Move.",
+    system: [
+      "You are Jeremiah, an army-type Black man in a cartoon game world. You are the player's motivator and drill buddy — tough, warm, and always in their corner.",
+      "Voice: short, punchy sentences. Motivational. Mission framing. You say things like 'you got it, commando' and 'listen up, soldier.' Orders, not essays. Discipline is care.",
+      "Your job: the player just told you something they did today. First, appreciate them — loud, proud, like a mission accomplished. Then give exactly ONE piece of advice for betterment — framed as the next mission, one clear objective, doable tomorrow.",
+      "Length: 200 to 300 words total. Write it as one flowing reply in your voice, no headings, no bullet lists, no breaking character, no mentioning that you are an AI.",
+      "Never shame the player. Never be cruel. Hard on the mission, soft on the person."
+    ].join(" ")
+  },
+  marty: {
+    name: "MARTY BYRDE",
+    role: "DAD / LOGIC",
+    tagline: "Calm. Cold. Indirect. The math.",
+    system: [
+      "You are Marty Byrde, the calm, logical dad-type character in a cartoon game world. You speak like Marty Byrde from Ozark: calm, rational, dry. You are the only sane man in the room, and you know it, and it exhausts you.",
+      "Voice: short declarative sentences, one thought per line, fragments welcome. Open flat — 'Okay.' / 'Here's the thing.' / 'Look.' Tag explanations with a check-in: 'okay?', 'right?', 'all right?' Restate the situation back plainer than the player said it. Numbers are your adjectives — use exact figures instead of vague ones. 'Let's say' plus a rounded number when you sketch a scenario. Dry understatement, then move on. Never moralize, never gush, never ramble, never do tough-guy talk. Under pressure you get shorter, not louder.",
+      "Your job: the player just told you something they did today. First, appreciate them — flat, rationed, one line, and mean it. Then give exactly ONE piece of advice for betterment — logical, cold, indirect. Reduce it to mechanics: the situation, the constraint, the move. A plan with steps, not a feeling.",
+      "Length: 200 to 300 words total. Write it as short lines separated by line breaks, Marty style — never a wall of text, no headings, no bullet lists, no breaking character, no mentioning that you are an AI.",
+      "Never lecture on right and wrong. Never claim the moral high ground. You show the math of why the better move is their best option."
+    ].join(" ")
+  },
+  harkhy: {
+    name: "HARKHY",
+    role: "LITTLE HARKHY",
+    tagline: "Little Aladdin. Your voice.",
+    system: [
+      "You are Little Harkhy, a little Aladdin-type kid in a cartoon game world — fair, Mediterranean skin tone, street-smart, quick. You talk exactly like Harkirat: short bursts, one thought per line, zero preamble, direct address.",
+      "Voice: 'yeah' is a complete verdict. Questions stripped out. Profanity as punctuation and emphasis, not anger. You think in conditions — if this, then that. 'Let's say' plus a rounded number when you sketch a scenario. Numbers written loose, like 600$ or 4.5k$. Dashes chain clauses. You write sounds, not spellings. A receipt is one word: Cool. Yeah. Okay. You never pad, never over-explain, never sound like a teacher.",
+      "Your job: the player just told you something they did today. First, appreciate them — in your own words, short and real. Then give exactly ONE piece of advice for betterment — plain, direct, one condition at a time.",
+      "Length: 200 to 300 words total. Write it as short lines, your cadence — no headings, no bullet lists, no breaking character, no mentioning that you are an AI.",
+      "Never lecture. Never moralize. You talk to the player like a friend who tells it straight."
+    ].join(" ")
+  }
+};
+
+const CHARACTER_KEYS = ["sarah", "jeremiah", "marty", "harkhy"];
+
+/* ================= STATE ================= */
+
+const LS = {
+  activities: "tt_activities",
+  key: "tt_api_key",
+  model: "tt_model",
+  selected: "tt_selected"
+};
+
+const DEFAULT_MODEL = "claude-sonnet-4-5";
+
+function loadActivities() {
+  try {
+    return JSON.parse(localStorage.getItem(LS.activities) || "[]");
+  } catch (_) {
+    return [];
+  }
+}
+
+function saveActivities(list) {
+  localStorage.setItem(LS.activities, JSON.stringify(list));
+}
+
+let selected = localStorage.getItem(LS.selected) || null;
+
+/* Level: every 5 activities = one level up. No XP. No badges. */
+function levelFor(count) {
+  return 1 + Math.floor(count / 5);
+}
+
+function activitiesToNextLevel(count) {
+  return 5 - (count % 5);
+}
+
+/* Day counter: days since first logged activity. First day = Day 1. */
+function dayFor(activities) {
+  if (!activities.length) return 1;
+  const first = Math.min(...activities.map((a) => a.ts));
+  return Math.floor((Date.now() - first) / 86400000) + 1;
+}
+
+function fmtTime(ts) {
+  const d = new Date(ts);
+  return d.toLocaleString(undefined, {
+    month: "short", day: "numeric", hour: "2-digit", minute: "2-digit"
+  });
+}
+
+/* ================= UI ================= */
+
+const $ = (id) => document.getElementById(id);
+
+let dialoguePages = [];
+let dialoguePageIndex = 0;
+
+function setDialogue(name, text, paginate) {
+  $("dialogue-name").textContent = name;
+  if (paginate) {
+    dialoguePages = paginateText(text);
+    dialoguePageIndex = 0;
+    renderDialoguePage();
+  } else {
+    dialoguePages = [];
+    dialoguePageIndex = 0;
+    $("dialogue-text").textContent = text;
+    $("dialogue-next").hidden = true;
+  }
+}
+
+function paginateText(text) {
+  // Game text: short pages, one idea per page.
+  const sentences = text.match(/[^.!?\n]+[.!?\n]+["']?|[^.!?\n]+$/g) || [text];
+  const pages = [];
+  let page = "";
+  for (const s of sentences) {
+    const piece = s.trim();
+    if (!piece) continue;
+    if (page.length + piece.length + 1 > 230 && page) {
+      pages.push(page);
+      page = piece;
+    } else {
+      page = page ? page + " " + piece : piece;
+    }
+  }
+  if (page) pages.push(page);
+  return pages.length ? pages : [text];
+}
+
+function renderDialoguePage() {
+  $("dialogue-text").textContent = dialoguePages[dialoguePageIndex] || "";
+  $("dialogue-next").hidden = dialoguePageIndex >= dialoguePages.length - 1;
+}
+
+$("dialogue-box").addEventListener("click", () => {
+  if (dialoguePages.length && dialoguePageIndex < dialoguePages.length - 1) {
+    dialoguePageIndex++;
+    renderDialoguePage();
+  }
+});
+
+function renderParty() {
+  const party = $("party");
+  party.innerHTML = "";
+  for (const key of CHARACTER_KEYS) {
+    const c = CHARACTERS[key];
+    const card = document.createElement("div");
+    card.className = "party-card" + (selected === key ? " selected" : "");
+    card.dataset.key = key;
+    const canvas = document.createElement("canvas");
+    drawSprite(canvas, key);
+    const name = document.createElement("span");
+    name.className = "party-name";
+    name.textContent = c.name;
+    const role = document.createElement("span");
+    role.className = "party-role";
+    role.textContent = c.role;
+    card.append(canvas, name, role);
+    card.addEventListener("click", () => selectCharacter(key));
+    party.appendChild(card);
+  }
+}
+
+function selectCharacter(key, silent) {
+  selected = key;
+  localStorage.setItem(LS.selected, key);
+  renderParty();
+  const c = CHARACTERS[key];
+  $("selected-line").textContent = "SELECTED: " + c.name + " — " + c.tagline.toUpperCase();
+  if (!silent) {
+    setDialogue(c.name, "You picked me. Good. Now tell me what you did today — in your own words. I am listening.", false);
+  }
+}
+
+let rolling = false;
+function randomRoll() {
+  if (rolling) return;
+  rolling = true;
+  let i = 0;
+  const total = 9 + Math.floor(Math.random() * 4);
+  const winner = CHARACTER_KEYS[Math.floor(Math.random() * CHARACTER_KEYS.length)];
+  const timer = setInterval(() => {
+    const key = CHARACTER_KEYS[i % CHARACTER_KEYS.length];
+    selected = key;
+    renderParty();
+    i++;
+    if (i > total) {
+      clearInterval(timer);
+      rolling = false;
+      selectCharacter(winner);
+    }
+  }, 90);
+}
+
+$("random-btn").addEventListener("click", randomRoll);
+
+function renderStats() {
+  const activities = loadActivities();
+  $("day-count").textContent = dayFor(activities);
+  $("level-count").textContent = levelFor(activities.length);
+  $("activity-count").textContent = activities.length;
+  $("next-level").textContent = activitiesToNextLevel(activities.length);
+}
+
+function renderHistory() {
+  const activities = loadActivities();
+  const list = $("history-list");
+  list.innerHTML = "";
+  $("empty-log").style.display = activities.length ? "none" : "block";
+  const recent = activities.slice(-10).reverse();
+  for (const a of recent) {
+    const li = document.createElement("li");
+    const who = document.createElement("span");
+    who.className = "log-who";
+    who.textContent = CHARACTERS[a.character].name + "  •  " + fmtTime(a.ts);
+    li.append(who, document.createTextNode(a.text));
+    list.appendChild(li);
+  }
+}
+
+$("clear-btn").addEventListener("click", () => {
+  if (!confirm("Clear your whole log? Your day count and level reset too.")) return;
+  saveActivities([]);
+  renderStats();
+  renderHistory();
+  setDialogue("???", "Log cleared. Fresh start. One line is all it takes.", false);
+});
+
+/* ================= ANTHROPIC CALL ================= */
+
+async function getAdvice(characterKey, activityText, day, level) {
+  const apiKey = (localStorage.getItem(LS.key) || "").trim();
+  const model = (localStorage.getItem(LS.model) || DEFAULT_MODEL).trim() || DEFAULT_MODEL;
+  if (!apiKey) {
+    throw new Error("NO_KEY");
+  }
+  const c = CHARACTERS[characterKey];
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "x-api-key": apiKey,
+      "anthropic-version": "2023-06-01",
+      "anthropic-dangerous-direct-browser-access": "true"
+    },
+    body: JSON.stringify({
+      model: model,
+      max_tokens: 1200,
+      system: c.system,
+      messages: [
+        {
+          role: "user",
+          content:
+            "This is Day " + day + " of my journey. I am Level " + level + ". " +
+            "Today I did this: \"" + activityText + "\". Respond as " + c.name + "."
+        }
+      ]
+    })
+  });
+  if (!res.ok) {
+    let detail = "";
+    try {
+      const err = await res.json();
+      detail = err && err.error && err.error.message ? ": " + err.error.message : "";
+    } catch (_) { /* ignore */ }
+    throw new Error("API_" + res.status + detail);
+  }
+  const data = await res.json();
+  const text = data && data.content && data.content[0] && data.content[0].text;
+  if (!text) throw new Error("EMPTY_REPLY");
+  return text;
+}
+
+/* ================= LOG FLOW ================= */
+
+let busy = false;
+
+$("log-btn").addEventListener("click", async () => {
+  if (busy) return;
+  const input = $("activity-input");
+  const text = input.value.trim();
+  if (!text) {
+    setDialogue("???", "Write something first. One line is enough. What did you do today?", false);
+    input.focus();
+    return;
+  }
+  let characterKey = selected;
+  if (!characterKey) {
+    characterKey = CHARACTER_KEYS[Math.floor(Math.random() * CHARACTER_KEYS.length)];
+    selectCharacter(characterKey, true);
+  }
+  const c = CHARACTERS[characterKey];
+
+  const activities = loadActivities();
+  const oldLevel = levelFor(activities.length);
+  const entry = { text: text, ts: Date.now(), character: characterKey };
+  activities.push(entry);
+  saveActivities(activities);
+  input.value = "";
+  renderStats();
+  renderHistory();
+
+  const newLevel = levelFor(activities.length);
+  const day = dayFor(activities);
+  const leveledUp = newLevel > oldLevel;
+
+  busy = true;
+  setDialogue(c.name, c.name + " is thinking...", false);
+  try {
+    const advice = await getAdvice(characterKey, text, day, newLevel);
+    let full = advice;
+    if (leveledUp) {
+      full = "LEVEL UP! You are now LEVEL " + newLevel + ". Five activities, one level. That is how it works.\n\n" + advice;
+    }
+    setDialogue(c.name, full, true);
+  } catch (err) {
+    if (err.message === "NO_KEY") {
+      setDialogue(c.name, "Hold on. I need your Anthropic API key first — put it in Settings below. It stays in this browser, and it only ever goes to api.anthropic.com. Your activity is saved already. Add the key and log your next one.", false);
+    } else {
+      setDialogue(c.name, "Something went wrong getting my reply (" + err.message + "). Your activity is saved. Check your key and model in Settings, then try again.", false);
+    }
+  } finally {
+    busy = false;
+  }
+});
+
+/* ================= SETTINGS ================= */
+
+$("save-settings-btn").addEventListener("click", () => {
+  const key = $("api-key").value.trim();
+  const model = $("model").value.trim() || DEFAULT_MODEL;
+  if (key) localStorage.setItem(LS.key, key);
+  localStorage.setItem(LS.model, model);
+  setDialogue("???", "Settings saved. Your key stays in this browser. Nothing else changes.", false);
+});
+
+/* ================= INIT ================= */
+
+(function init() {
+  const savedKey = localStorage.getItem(LS.key);
+  if (savedKey) $("api-key").value = savedKey;
+  const savedModel = localStorage.getItem(LS.model);
+  if (savedModel) $("model").value = savedModel;
+  renderParty();
+  renderStats();
+  renderHistory();
+  if (selected) {
+    const c = CHARACTERS[selected];
+    $("selected-line").textContent = "SELECTED: " + c.name + " — " + c.tagline.toUpperCase();
+    setDialogue(c.name, "Welcome back. Day " + dayFor(loadActivities()) + ". Tell me what you did today.", false);
+  }
+})();

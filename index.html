@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Truthful Tracker - AI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="gb-shell">
+  <div class="gb-screen">
+
+    <header class="title-bar">
+      <h1>TRUTHFUL<br>TRACKER - AI</h1>
+      <p class="tagline">LOG IT. LEVEL UP. BE TRUTHFUL.</p>
+    </header>
+
+    <div class="stats-bar">
+      <div class="stat"><span class="stat-label">DAY</span><span class="stat-value" id="day-count">1</span></div>
+      <div class="stat"><span class="stat-label">LEVEL</span><span class="stat-value" id="level-count">1</span></div>
+      <div class="stat"><span class="stat-label">ACTIVITIES</span><span class="stat-value" id="activity-count">0</span></div>
+      <div class="stat"><span class="stat-label">NEXT LV</span><span class="stat-value" id="next-level">5</span></div>
+    </div>
+
+    <section class="party-section">
+      <h2>CHOOSE YOUR CHARACTER</h2>
+      <div class="party" id="party"></div>
+      <button class="gb-btn" id="random-btn" type="button">? RANDOM ROLL</button>
+      <p class="selected-line" id="selected-line">NO CHARACTER SELECTED YET.</p>
+    </section>
+
+    <section class="log-section">
+      <h2>LOG AN ACTIVITY</h2>
+      <textarea id="activity-input" rows="3" placeholder="What did you do today? Write it in your own words..."></textarea>
+      <button class="gb-btn big" id="log-btn" type="button">LOG ACTIVITY + GET ADVICE</button>
+      <p class="hint">5 ACTIVITIES = 1 LEVEL UP. NO XP. NO BADGES. JUST LEVEL UP.</p>
+    </section>
+
+    <section class="dialogue-section">
+      <div class="dialogue-box" id="dialogue-box">
+        <div class="dialogue-name" id="dialogue-name">???</div>
+        <p class="dialogue-text" id="dialogue-text">Pick a character, then tell me what you did today. I will listen, and I will tell you the truth about it.</p>
+        <div class="dialogue-next" id="dialogue-next" hidden>&#9660;</div>
+      </div>
+    </section>
+
+    <section class="history-section">
+      <h2>YOUR LOG</h2>
+      <ul class="history" id="history-list"></ul>
+      <p class="empty-log" id="empty-log">NOTHING LOGGED YET. YOUR JOURNEY STARTS WITH ONE LINE.</p>
+      <button class="gb-btn small" id="clear-btn" type="button">CLEAR LOG</button>
+    </section>
+
+    <section class="settings-section">
+      <h2>SETTINGS</h2>
+      <label class="settings-label" for="api-key">ANTHROPIC API KEY</label>
+      <input type="password" id="api-key" placeholder="sk-ant-..." autocomplete="off">
+      <label class="settings-label" for="model">MODEL</label>
+      <input type="text" id="model" value="claude-sonnet-4-5" autocomplete="off">
+      <button class="gb-btn small" id="save-settings-btn" type="button">SAVE SETTINGS</button>
+      <p class="hint">YOUR KEY STAYS IN THIS BROWSER. IT ONLY EVER GOES TO API.ANTHROPIC.COM, IN THE DIRECT CALL THAT GETS YOUR ADVICE. NOTHING ELSE.</p>
+    </section>
+
+    <footer class="footer">
+      <p>TRUTHFUL TRACKER - AI &middot; LOCAL FIRST &middot; NO BACKEND &middot; NO ACCOUNTS</p>
+    </footer>
+
+  </div>
+</div>
+<script src="app.js"></script>
+</body>
+</html>

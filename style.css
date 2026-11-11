@@ -1,0 +1,366 @@
+/* TRUTHFUL TRACKER - AI
+   Old Pokemon / Game Boy style.
+   Palette: the classic 4-shade Game Boy green.
+   Everything chunky. No rounded corners. No blur anywhere. */
+
+:root {
+  --gb-darkest: #0f380f;
+  --gb-dark: #306230;
+  --gb-light: #8bac0f;
+  --gb-lightest: #9bbc0f;
+  --paper: #f8f8e8;
+  --ink: #0f380f;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  border-radius: 0 !important;
+}
+
+html {
+  background: var(--gb-darkest);
+}
+
+body {
+  font-family: "Press Start 2P", monospace;
+  background: var(--gb-darkest);
+  color: var(--ink);
+  font-size: 12px;
+  line-height: 1.7;
+  -webkit-font-smoothing: none;
+  padding: 16px 12px 32px;
+}
+
+/* ---- the handheld shell ---- */
+.gb-shell {
+  max-width: 760px;
+  margin: 0 auto;
+  background: var(--gb-dark);
+  border: 4px solid var(--gb-darkest);
+  box-shadow: 8px 8px 0 rgba(0, 0, 0, 0.45);
+  padding: 10px;
+}
+
+.gb-screen {
+  background: var(--gb-lightest);
+  border: 4px solid var(--gb-darkest);
+  padding: 18px 14px;
+}
+
+/* ---- title ---- */
+.title-bar {
+  text-align: center;
+  border-bottom: 4px solid var(--gb-darkest);
+  padding-bottom: 14px;
+  margin-bottom: 14px;
+}
+
+.title-bar h1 {
+  font-size: 26px;
+  line-height: 1.5;
+  color: var(--gb-darkest);
+  text-shadow: 3px 3px 0 var(--gb-light);
+  letter-spacing: 1px;
+}
+
+.tagline {
+  margin-top: 10px;
+  font-size: 10px;
+  color: var(--gb-dark);
+}
+
+/* ---- stats ---- */
+.stats-bar {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.stat {
+  background: var(--paper);
+  border: 4px solid var(--gb-darkest);
+  box-shadow: 4px 4px 0 var(--gb-dark);
+  padding: 8px 4px;
+  text-align: center;
+}
+
+.stat-label {
+  display: block;
+  font-size: 8px;
+  color: var(--gb-dark);
+  margin-bottom: 6px;
+}
+
+.stat-value {
+  display: block;
+  font-size: 18px;
+  color: var(--gb-darkest);
+}
+
+/* ---- sections ---- */
+section {
+  margin-bottom: 20px;
+}
+
+h2 {
+  font-size: 12px;
+  color: var(--gb-darkest);
+  margin-bottom: 10px;
+  letter-spacing: 1px;
+}
+
+h2::before {
+  content: "\25B6  ";
+  color: var(--gb-dark);
+}
+
+/* ---- character select ---- */
+.party {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.party-card {
+  background: var(--paper);
+  border: 4px solid var(--gb-darkest);
+  box-shadow: 4px 4px 0 var(--gb-dark);
+  padding: 8px 4px 6px;
+  text-align: center;
+  cursor: pointer;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+.party-card:hover {
+  background: var(--gb-light);
+}
+
+.party-card.selected {
+  background: var(--gb-light);
+  box-shadow: 4px 4px 0 var(--gb-darkest), inset 0 0 0 3px var(--gb-darkest);
+  transform: translate(2px, 2px);
+}
+
+.party-card canvas {
+  width: 72px;
+  height: 72px;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+.party-name {
+  display: block;
+  margin-top: 6px;
+  font-size: 9px;
+  color: var(--gb-darkest);
+}
+
+.party-role {
+  display: block;
+  margin-top: 5px;
+  font-size: 7px;
+  line-height: 1.6;
+  color: var(--gb-dark);
+}
+
+#random-btn {
+  margin-top: 10px;
+  width: 100%;
+}
+
+.selected-line {
+  margin-top: 10px;
+  font-size: 10px;
+  text-align: center;
+  color: var(--gb-dark);
+}
+
+/* ---- buttons ---- */
+.gb-btn {
+  font-family: "Press Start 2P", monospace;
+  font-size: 11px;
+  background: var(--gb-dark);
+  color: var(--gb-lightest);
+  border: 4px solid var(--gb-darkest);
+  box-shadow: 4px 4px 0 var(--gb-darkest);
+  padding: 12px 10px;
+  cursor: pointer;
+  line-height: 1.5;
+}
+
+.gb-btn:hover {
+  background: var(--gb-darkest);
+}
+
+.gb-btn:active {
+  transform: translate(3px, 3px);
+  box-shadow: 1px 1px 0 var(--gb-darkest);
+}
+
+.gb-btn.big {
+  width: 100%;
+  font-size: 12px;
+  padding: 14px 10px;
+}
+
+.gb-btn.small {
+  font-size: 9px;
+  padding: 9px 8px;
+}
+
+/* ---- log form ---- */
+#activity-input {
+  width: 100%;
+  font-family: "Press Start 2P", monospace;
+  font-size: 11px;
+  line-height: 1.8;
+  color: var(--ink);
+  background: var(--paper);
+  border: 4px solid var(--gb-darkest);
+  box-shadow: inset 3px 3px 0 var(--gb-light);
+  padding: 10px;
+  margin-bottom: 10px;
+  resize: vertical;
+}
+
+#activity-input:focus {
+  outline: 3px solid var(--gb-dark);
+  outline-offset: 0;
+}
+
+.hint {
+  margin-top: 8px;
+  font-size: 8px;
+  line-height: 1.8;
+  color: var(--gb-dark);
+}
+
+/* ---- dialogue box (the classic one, bottom of the screen) ---- */
+.dialogue-section {
+  margin-top: 6px;
+}
+
+.dialogue-box {
+  position: relative;
+  background: var(--paper);
+  border: 4px solid var(--gb-darkest);
+  box-shadow: 0 0 0 4px var(--gb-lightest), 0 0 0 8px var(--gb-darkest), 6px 6px 0 var(--gb-dark);
+  padding: 26px 14px 16px;
+  min-height: 130px;
+  cursor: pointer;
+}
+
+.dialogue-name {
+  position: absolute;
+  top: -14px;
+  left: 10px;
+  background: var(--gb-darkest);
+  color: var(--gb-lightest);
+  font-size: 10px;
+  padding: 6px 10px;
+}
+
+.dialogue-text {
+  font-size: 11px;
+  line-height: 1.9;
+  color: var(--ink);
+  white-space: pre-wrap;
+}
+
+.dialogue-next {
+  position: absolute;
+  right: 12px;
+  bottom: 8px;
+  font-size: 12px;
+  color: var(--gb-darkest);
+  animation: blink 0.9s steps(2) infinite;
+}
+
+@keyframes blink {
+  50% { opacity: 0; }
+}
+
+/* ---- history ---- */
+.history {
+  list-style: none;
+}
+
+.history li {
+  background: var(--paper);
+  border: 3px solid var(--gb-darkest);
+  padding: 8px 10px;
+  margin-bottom: 8px;
+  font-size: 9px;
+  line-height: 1.8;
+}
+
+.history .log-who {
+  color: var(--gb-dark);
+  display: block;
+  margin-bottom: 4px;
+  font-size: 8px;
+}
+
+.empty-log {
+  font-size: 9px;
+  line-height: 1.8;
+  color: var(--gb-dark);
+  margin-bottom: 10px;
+}
+
+/* ---- settings ---- */
+.settings-label {
+  display: block;
+  font-size: 9px;
+  color: var(--gb-dark);
+  margin: 10px 0 6px;
+}
+
+.settings-section input {
+  width: 100%;
+  font-family: "Press Start 2P", monospace;
+  font-size: 11px;
+  color: var(--ink);
+  background: var(--paper);
+  border: 4px solid var(--gb-darkest);
+  padding: 10px;
+}
+
+.settings-section input:focus {
+  outline: 3px solid var(--gb-dark);
+  outline-offset: 0;
+}
+
+#save-settings-btn {
+  margin-top: 10px;
+}
+
+/* ---- footer ---- */
+.footer {
+  border-top: 4px solid var(--gb-darkest);
+  padding-top: 12px;
+  text-align: center;
+}
+
+.footer p {
+  font-size: 8px;
+  line-height: 1.8;
+  color: var(--gb-dark);
+}
+
+/* ---- small screens ---- */
+@media (max-width: 560px) {
+  .party {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .stats-bar {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .title-bar h1 {
+    font-size: 20px;
+  }
+}
