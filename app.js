@@ -5,7 +5,7 @@
    The key only ever leaves the machine in the direct call to api.anthropic.com.
    No character select: one character is picked at random for each piece of
    advice and pops up beside the dialogue box. The advice rolls in with a
-   typewriter effect and auto-advances every 5 seconds. */
+   typewriter effect and auto-advances 15 seconds after each page finishes typing. */
 
 "use strict";
 
@@ -124,8 +124,8 @@ let typeTimer = null;
 let autoTimer = null;
 let typing = false;
 
-/* The advice rolls on by itself: next page every 5 seconds. */
-const AUTO_ADVANCE_MS = 5000;
+/* The advice rolls on by itself: next page 15 seconds after it finishes typing. */
+const AUTO_ADVANCE_MS = 15000;
 
 function stopDialogueTimers() {
   if (typeTimer !== null) { clearInterval(typeTimer); typeTimer = null; }
@@ -181,7 +181,7 @@ function typePage(text, onDone) {
   typing = true;
   setTalking(true);
   const step = () => {
-    i = Math.min(text.length, i + 3);
+    i = Math.min(text.length, i + 2);
     el.textContent = text.slice(0, i);
     const caret = document.createElement("span");
     caret.className = "caret";
@@ -196,7 +196,7 @@ function typePage(text, onDone) {
     }
   };
   step();
-  typeTimer = setInterval(step, 18);
+  typeTimer = setInterval(step, 40);
 }
 
 function scheduleAutoAdvance() {

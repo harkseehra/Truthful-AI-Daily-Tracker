@@ -1,7 +1,7 @@
 /* TRUTHFUL AI DAILY TRACKER — v3
    Clean pastel yellow. Light, more white. Warm sun, soft cream.
    White background, pastel-yellow accents, warm dark ink.
-   Anton for display type, Inter for body. No dark mode, no green. */
+   Anton for display type, Titan One for body. No dark mode, no green. */
 
 :root {
   --bg: #fffdf4;
@@ -32,7 +32,7 @@ html {
 }
 
 body {
-  font-family: "Inter", system-ui, -apple-system, sans-serif;
+  font-family: "Titan One", system-ui, -apple-system, sans-serif;
   background:
     radial-gradient(1000px 480px at 88% -10%, rgba(252, 211, 77, 0.35), transparent 60%),
     radial-gradient(900px 460px at -8% 108%, rgba(254, 243, 199, 0.55), transparent 60%),
@@ -231,7 +231,7 @@ h2 {
 /* ---- activity form ---- */
 #activity-input {
   width: 100%;
-  font-family: "Inter", sans-serif;
+  font-family: "Titan One", sans-serif;
   font-size: 16px;
   line-height: 1.6;
   color: var(--ink);
@@ -468,7 +468,7 @@ h2 {
 
 .settings-card input {
   width: 100%;
-  font-family: "Inter", sans-serif;
+  font-family: "Titan One", sans-serif;
   font-size: 15px;
   color: var(--ink);
   background: #fffdf4;
