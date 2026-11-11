@@ -1,134 +1,18 @@
-/* TRUTHFUL TRACKER - AI
+/* TRUTHFUL AI DAILY TRACKER — v2
    Static. Local first. No backend. No accounts.
    Activities + API key live in localStorage only.
-   The key only ever leaves the machine in the direct call to api.anthropic.com. */
+   The key only ever leaves the machine in the direct call to api.anthropic.com.
+   No character select: one character is picked at random for each piece of
+   advice and pops up beside the dialogue box. */
 
 "use strict";
-
-/* ================= PIXEL SPRITES =================
-   Each sprite is a 16x16 grid of characters.
-   Rendered to canvas at integer scale with image-rendering: pixelated,
-   so it stays razor sharp on a 4K monitor. No blur anywhere. */
-
-const PALETTE = {
-  ".": null,            // transparent
-  k: "#0f380f",         // outline (game boy darkest)
-  s: "#f2c89b",         // skin, light
-  S: "#6b4226",         // skin, dark
-  m: "#e0aa7a",         // skin, medium (fair mediterranean)
-  h: "#f8d838",         // blonde hair
-  H: "#5a3a1a",         // brown hair
-  e: "#141414",         // eyes
-  M: "#8a4b2d",         // mouth
-  p: "#e86a92",         // pink dress
-  g: "#3a5f2a",         // army green
-  G: "#556b2f",         // camo green
-  l: "#7fb3d5",         // light blue shirt
-  t: "#2c3e70",         // tie
-  v: "#7b2fbe",         // purple vest
-  r: "#c0392b",         // red fez
-  w: "#f8f8f0"          // white
-};
-
-const SPRITES = {
-  sarah: [
-    "....hhhhhhhh....",
-    "...hhhhhhhhhh...",
-    "...hhsssssshh...",
-    "..hhsssssssshh..",
-    "..hhseessseshh..",
-    "..hhsssssssshh..",
-    "...hssssssssh...",
-    "....hssMMssh....",
-    ".....ssssss.....",
-    "....hhhhhhhh....",
-    "...hhhhhhhhhh...",
-    "..hpppppppppph..",
-    "..pppppppppppp..",
-    "..pppppppppppp..",
-    "..pppppppppppp..",
-    "..pppppppppppp.."
-  ],
-  jeremiah: [
-    ".....gggggg.....",
-    "....gggggggg....",
-    "...gggggggggg...",
-    "..gggggggggggg..",
-    "..SSSSSSSSSSSS..",
-    "..SSeeSSSSeeSS..",
-    "..SSSSSSSSSSSS..",
-    "...SSSSSSSSSS...",
-    "....SSMMMMSS....",
-    ".....SSSSSS.....",
-    "....gggggggg....",
-    "...gggggggggg...",
-    "..gggggggggggg..",
-    "..ggGggggggGgg..",
-    "..gggggggggggg..",
-    "..gggggggggggg.."
-  ],
-  marty: [
-    "....HHHHHHHH....",
-    "...HHHHHHHHHH...",
-    "...HHssssssHH...",
-    "..HHssssssssHH..",
-    "..HHseessseesHH.",
-    "..HHssssssssHH..",
-    "...HssssssssH...",
-    "....HssMMssH....",
-    ".....ssssss.....",
-    "....llllllll....",
-    "...llllllllll...",
-    "..llllllllllll..",
-    "..llllttllllll..",
-    "..llllttllllll..",
-    "..llllttllllll..",
-    "..llllttllllll.."
-  ],
-  harkhy: [
-    ".....rrrrrr.....",
-    "....rrrrrrrr....",
-    "....rrrrrrrr....",
-    "...mmmmmmmmmm...",
-    "...mmemmmemmm...",
-    "...mmmmmmmmmm...",
-    "...mmmmmmmmmm...",
-    "....mmmmmmmm....",
-    ".....mmMMmm.....",
-    ".....mmmmmm.....",
-    "....vvvvvvvv....",
-    "...vvvvvvvvvv...",
-    "..vvwwwwwwwwvv..",
-    "..vvwwwwwwwwvv..",
-    "..vvvvvvvvvvvv..",
-    "..vvvvvvvvvvvv.."
-  ]
-};
-
-function drawSprite(canvas, key) {
-  const rows = SPRITES[key];
-  const px = 16;
-  const scale = 9; // 16 * 9 = 144px backing store, CSS shows it at 72px -> integer 2x downscale, still crisp
-  canvas.width = px * scale;
-  canvas.height = px * scale;
-  const ctx = canvas.getContext("2d");
-  ctx.imageSmoothingEnabled = false;
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  for (let y = 0; y < rows.length; y++) {
-    for (let x = 0; x < rows[y].length; x++) {
-      const color = PALETTE[rows[y][x]];
-      if (!color) continue;
-      ctx.fillStyle = color;
-      ctx.fillRect(x * scale, y * scale, scale, scale);
-    }
-  }
-}
 
 /* ================= CHARACTER VOICES =================
    Each voice is a system prompt written into the program.
    Marty: distilled from Ozark S1-S4 (voice-profile.md).
    Harkhy: Harkirat's own tone profile v1 (Oct 21 2026).
-   Sarah + Jeremiah: written fresh, in the same spirit. */
+   Sarah + Jeremiah: written fresh, in the same spirit.
+   Portraits come from portraits.js (base64 data URIs). */
 
 const CHARACTERS = {
   sarah: {
@@ -188,8 +72,7 @@ const CHARACTER_KEYS = ["sarah", "jeremiah", "marty", "harkhy"];
 const LS = {
   activities: "tt_activities",
   key: "tt_api_key",
-  model: "tt_model",
-  selected: "tt_selected"
+  model: "tt_model"
 };
 
 const DEFAULT_MODEL = "claude-sonnet-4-5";
@@ -205,8 +88,6 @@ function loadActivities() {
 function saveActivities(list) {
   localStorage.setItem(LS.activities, JSON.stringify(list));
 }
-
-let selected = localStorage.getItem(LS.selected) || null;
 
 /* Level: every 5 activities = one level up. No XP. No badges. */
 function levelFor(count) {
@@ -260,7 +141,7 @@ function paginateText(text) {
   for (const s of sentences) {
     const piece = s.trim();
     if (!piece) continue;
-    if (page.length + piece.length + 1 > 230 && page) {
+    if (page.length + piece.length + 1 > 300 && page) {
       pages.push(page);
       page = piece;
     } else {
@@ -283,60 +164,30 @@ $("dialogue-box").addEventListener("click", () => {
   }
 });
 
-function renderParty() {
-  const party = $("party");
-  party.innerHTML = "";
-  for (const key of CHARACTER_KEYS) {
-    const c = CHARACTERS[key];
-    const card = document.createElement("div");
-    card.className = "party-card" + (selected === key ? " selected" : "");
-    card.dataset.key = key;
-    const canvas = document.createElement("canvas");
-    drawSprite(canvas, key);
-    const name = document.createElement("span");
-    name.className = "party-name";
-    name.textContent = c.name;
-    const role = document.createElement("span");
-    role.className = "party-role";
-    role.textContent = c.role;
-    card.append(canvas, name, role);
-    card.addEventListener("click", () => selectCharacter(key));
-    party.appendChild(card);
-  }
+/* ---- the random reveal: one character pops up beside the dialogue box ---- */
+
+let lastCharacter = null;
+
+function pickRandomCharacter() {
+  let pool = CHARACTER_KEYS.filter((k) => k !== lastCharacter);
+  if (!pool.length) pool = CHARACTER_KEYS;
+  const key = pool[Math.floor(Math.random() * pool.length)];
+  lastCharacter = key;
+  return key;
 }
 
-function selectCharacter(key, silent) {
-  selected = key;
-  localStorage.setItem(LS.selected, key);
-  renderParty();
-  const c = CHARACTERS[key];
-  $("selected-line").textContent = "SELECTED: " + c.name + " — " + c.tagline.toUpperCase();
-  if (!silent) {
-    setDialogue(c.name, "You picked me. Good. Now tell me what you did today — in your own words. I am listening.", false);
-  }
+function showCharacter(key) {
+  const img = $("portrait-img");
+  const empty = $("portrait-empty");
+  img.src = PORTRAITS[key];
+  img.alt = CHARACTERS[key].name;
+  img.hidden = false;
+  empty.hidden = true;
+  // Re-trigger the pop-in animation.
+  img.classList.remove("pop");
+  void img.offsetWidth;
+  img.classList.add("pop");
 }
-
-let rolling = false;
-function randomRoll() {
-  if (rolling) return;
-  rolling = true;
-  let i = 0;
-  const total = 9 + Math.floor(Math.random() * 4);
-  const winner = CHARACTER_KEYS[Math.floor(Math.random() * CHARACTER_KEYS.length)];
-  const timer = setInterval(() => {
-    const key = CHARACTER_KEYS[i % CHARACTER_KEYS.length];
-    selected = key;
-    renderParty();
-    i++;
-    if (i > total) {
-      clearInterval(timer);
-      rolling = false;
-      selectCharacter(winner);
-    }
-  }, 90);
-}
-
-$("random-btn").addEventListener("click", randomRoll);
 
 function renderStats() {
   const activities = loadActivities();
@@ -365,8 +216,11 @@ function renderHistory() {
 $("clear-btn").addEventListener("click", () => {
   if (!confirm("Clear your whole log? Your day count and level reset too.")) return;
   saveActivities([]);
+  lastCharacter = null;
   renderStats();
   renderHistory();
+  $("portrait-img").hidden = true;
+  $("portrait-empty").hidden = false;
   setDialogue("???", "Log cleared. Fresh start. One line is all it takes.", false);
 });
 
@@ -428,12 +282,11 @@ $("log-btn").addEventListener("click", async () => {
     input.focus();
     return;
   }
-  let characterKey = selected;
-  if (!characterKey) {
-    characterKey = CHARACTER_KEYS[Math.floor(Math.random() * CHARACTER_KEYS.length)];
-    selectCharacter(characterKey, true);
-  }
+
+  // A character pops up at random, beside the dialogue box.
+  const characterKey = pickRandomCharacter();
   const c = CHARACTERS[characterKey];
+  showCharacter(characterKey);
 
   const activities = loadActivities();
   const oldLevel = levelFor(activities.length);
@@ -485,12 +338,6 @@ $("save-settings-btn").addEventListener("click", () => {
   if (savedKey) $("api-key").value = savedKey;
   const savedModel = localStorage.getItem(LS.model);
   if (savedModel) $("model").value = savedModel;
-  renderParty();
   renderStats();
   renderHistory();
-  if (selected) {
-    const c = CHARACTERS[selected];
-    $("selected-line").textContent = "SELECTED: " + c.name + " — " + c.tagline.toUpperCase();
-    setDialogue(c.name, "Welcome back. Day " + dayFor(loadActivities()) + ". Tell me what you did today.", false);
-  }
 })();
