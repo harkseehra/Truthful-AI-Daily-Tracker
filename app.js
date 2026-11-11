@@ -1,9 +1,11 @@
-/* TRUTHFUL AI DAILY TRACKER — v2
+/* TRUTHFUL AI DAILY TRACKER — v3
    Static. Local first. No backend. No accounts.
+   Clean pastel yellow, light, more white.
    Activities + API key live in localStorage only.
    The key only ever leaves the machine in the direct call to api.anthropic.com.
    No character select: one character is picked at random for each piece of
-   advice and pops up beside the dialogue box. */
+   advice and pops up beside the dialogue box. The advice rolls in with a
+   typewriter effect and auto-advances every 5 seconds. */
 
 "use strict";
 
@@ -98,7 +100,7 @@ function activitiesToNextLevel(count) {
   return 5 - (count % 5);
 }
 
-/* Day counter: days since first logged activity. First day = Day 1. */
+/* Day counter: days since first activity. First day = Day 1. */
 function dayFor(activities) {
   if (!activities.length) return 1;
   const first = Math.min(...activities.map((a) => a.ts));
@@ -118,8 +120,28 @@ const $ = (id) => document.getElementById(id);
 
 let dialoguePages = [];
 let dialoguePageIndex = 0;
+let typeTimer = null;
+let autoTimer = null;
+let typing = false;
+
+/* The advice rolls on by itself: next page every 5 seconds. */
+const AUTO_ADVANCE_MS = 5000;
+
+function stopDialogueTimers() {
+  if (typeTimer !== null) { clearInterval(typeTimer); typeTimer = null; }
+  if (autoTimer !== null) { clearTimeout(autoTimer); autoTimer = null; }
+  typing = false;
+}
+
+function setTalking(on) {
+  const img = $("portrait-img");
+  if (!img) return;
+  img.classList.toggle("talking", !!on && !img.hidden);
+}
 
 function setDialogue(name, text, paginate) {
+  stopDialogueTimers();
+  setTalking(false);
   $("dialogue-name").textContent = name;
   if (paginate) {
     dialoguePages = paginateText(text);
@@ -152,12 +174,57 @@ function paginateText(text) {
   return pages.length ? pages : [text];
 }
 
+/* Roll the page in, game-style, with a blinking caret. */
+function typePage(text, onDone) {
+  const el = $("dialogue-text");
+  let i = 0;
+  typing = true;
+  setTalking(true);
+  const step = () => {
+    i = Math.min(text.length, i + 3);
+    el.textContent = text.slice(0, i);
+    const caret = document.createElement("span");
+    caret.className = "caret";
+    el.appendChild(caret);
+    if (i >= text.length) {
+      clearInterval(typeTimer);
+      typeTimer = null;
+      typing = false;
+      el.textContent = text;
+      setTalking(false);
+      if (onDone) onDone();
+    }
+  };
+  step();
+  typeTimer = setInterval(step, 18);
+}
+
+function scheduleAutoAdvance() {
+  autoTimer = setTimeout(() => {
+    dialoguePageIndex++;
+    renderDialoguePage();
+  }, AUTO_ADVANCE_MS);
+}
+
 function renderDialoguePage() {
-  $("dialogue-text").textContent = dialoguePages[dialoguePageIndex] || "";
-  $("dialogue-next").hidden = dialoguePageIndex >= dialoguePages.length - 1;
+  stopDialogueTimers();
+  const hasNext = dialoguePageIndex < dialoguePages.length - 1;
+  $("dialogue-next").hidden = !hasNext;
+  const page = dialoguePages[dialoguePageIndex] || "";
+  typePage(page, () => {
+    if (hasNext) scheduleAutoAdvance();
+  });
 }
 
 $("dialogue-box").addEventListener("click", () => {
+  if (typing) {
+    // Finish this page instantly instead of waiting for the roll.
+    stopDialogueTimers();
+    $("dialogue-text").textContent = dialoguePages[dialoguePageIndex] || "";
+    setTalking(false);
+    if (dialoguePageIndex < dialoguePages.length - 1) scheduleAutoAdvance();
+    return;
+  }
   if (dialoguePages.length && dialoguePageIndex < dialoguePages.length - 1) {
     dialoguePageIndex++;
     renderDialoguePage();
@@ -214,14 +281,14 @@ function renderHistory() {
 }
 
 $("clear-btn").addEventListener("click", () => {
-  if (!confirm("Clear your whole log? Your day count and level reset too.")) return;
+  if (!confirm("Clear all your activities? Your day count and level reset too.")) return;
   saveActivities([]);
   lastCharacter = null;
   renderStats();
   renderHistory();
   $("portrait-img").hidden = true;
   $("portrait-empty").hidden = false;
-  setDialogue("???", "Log cleared. Fresh start. One line is all it takes.", false);
+  setDialogue("???", "Activities cleared. Fresh start. One line is all it takes.", false);
 });
 
 /* ================= ANTHROPIC CALL ================= */
@@ -312,7 +379,7 @@ $("log-btn").addEventListener("click", async () => {
     setDialogue(c.name, full, true);
   } catch (err) {
     if (err.message === "NO_KEY") {
-      setDialogue(c.name, "Hold on. I need your Anthropic API key first — put it in Settings below. It stays in this browser, and it only ever goes to api.anthropic.com. Your activity is saved already. Add the key and log your next one.", false);
+      setDialogue(c.name, "Hold on. I need your Anthropic API key first — put it in Settings below. It stays in this browser, and it only ever goes to api.anthropic.com. Your activity is saved already. Add the key and add your next one.", false);
     } else {
       setDialogue(c.name, "Something went wrong getting my reply (" + err.message + "). Your activity is saved. Check your key and model in Settings, then try again.", false);
     }

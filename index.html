@@ -15,7 +15,7 @@
   <header class="topbar">
     <div class="brand">
       <h1>TRUTHFUL <span>AI</span> DAILY TRACKER</h1>
-      <p class="tagline">Log it. Level up. Be truthful.</p>
+      <p class="tagline">Add it. Level up. Be truthful.</p>
     </div>
     <div class="stats-bar">
       <div class="stat"><span class="stat-label">Day</span><span class="stat-value" id="day-count">1</span></div>
@@ -28,7 +28,7 @@
   <main class="layout">
     <section class="col-log">
       <div class="card log-card">
-        <h2>Log an activity</h2>
+        <h2>Add an activity</h2>
         <p class="card-sub">Write what you did today, in your own words. Someone will answer.</p>
         <textarea id="activity-input" rows="4" placeholder="What did you do today?"></textarea>
         <button class="btn primary" id="log-btn" type="button">Add to activities</button>
@@ -37,23 +37,26 @@
 
       <div class="card history-card">
         <div class="history-head">
-          <h2>Your log</h2>
-          <button class="btn ghost small" id="clear-btn" type="button">Clear log</button>
+          <h2>Your activities</h2>
+          <button class="btn ghost small" id="clear-btn" type="button">Clear activities</button>
         </div>
         <ul class="history" id="history-list"></ul>
-        <p class="empty-log" id="empty-log">Nothing logged yet. Your journey starts with one line.</p>
+        <p class="empty-log" id="empty-log">No activities yet. Your journey starts with one line.</p>
       </div>
     </section>
 
     <section class="col-stage">
       <div class="stage" id="stage">
         <div class="portrait-wrap" id="portrait-wrap">
-          <div class="portrait-empty" id="portrait-empty">?</div>
+          <div class="portrait-empty" id="portrait-empty">
+            <span class="empty-text">Someone will show up</span>
+            <span class="empty-sub">Add an activity and see who walks in.</span>
+          </div>
           <img class="portrait" id="portrait-img" alt="" hidden>
         </div>
         <div class="dialogue-box" id="dialogue-box">
           <div class="dialogue-name" id="dialogue-name">???</div>
-          <p class="dialogue-text" id="dialogue-text">Log an activity and someone will show up with the truth about it.</p>
+          <p class="dialogue-text" id="dialogue-text">Add an activity and someone will show up with the truth about it.</p>
           <div class="dialogue-next" id="dialogue-next" hidden>&#9660;</div>
         </div>
       </div>
